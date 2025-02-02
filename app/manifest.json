@@ -2,6 +2,8 @@
   "name": "kkgs-32 Studio",
   "start_url": "https://kkgs-32.github.io/Studio/",
   "display": "fullscreen",
+  "theme_color": "#FFFFFF",
+  "background_color": "#FFFFFF",
   "icons": [
     {
       "src": "https://kkgs-32.github.io/Studio/app/web-app-manifest-192x192.png",
