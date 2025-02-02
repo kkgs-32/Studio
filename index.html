@@ -283,22 +283,22 @@
             <div class="field">
               <label class="label">名前</label>
               <div class="control">
-                <input id="newUserName" class="input" type="text" placeholder="名前を入力">
+                <input id="newUserName" class="input" type="text">
               </div>
             </div>
             <div class="field">
               <label class="label">メールアドレス</label>
               <div class="control">
-                <input id="newUserEmail" class="input" type="email" placeholder="メールアドレス">
+                <input id="newUserEmail" class="input" type="email">
               </div>
             </div>
             <div class="field">
               <label class="label">パスワード</label>
               <div class="control">
-                <input id="newUserPassword" class="input" type="password" placeholder="パスワード" readonly>
+                <input id="newUserPassword" class="input" type="password" readonly>
               </div>
             </div>
-            <button id="createAccountButton" class="button is-primary has-text-white">アカウント作成</button>
+            <button id="createAccountButton" class="button is-success is-outlined">アカウント作成</button>
           </div>
           <div id="accountMessage" class="notification is-primary has-text-white" style="display:none;">
             <h3 class="title">アカウント作成完了のお知らせ</h3>
@@ -320,7 +320,7 @@
     document.getElementById("scrollButton").addEventListener("click", function() {
       window.scrollTo({
         top: document.documentElement.scrollHeight,
-        behavior: "smooth" // スムーズスクロール
+        behavior: "smooth"
       });
     });
   </script>
