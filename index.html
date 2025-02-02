@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>kkgs-32 Studio</title>
+  <meta name="description" content="kkgs-32 Studio">
+  <link rel="icon" type="image/png" href="app/favicon-96x96.png" sizes="96x96">
+  <link rel="icon" type="image/svg+xml" href="app/favicon.svg">
+  <link rel="shortcut icon" href="app/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="app/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="kkgs-32 Studio">
+  <link rel="manifest" href="app/manifest.json">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+    import { getDatabase, ref, set, get, remove, update, onValue } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCjZmvq16kBPs_xhlJp5FkiCzw42WhX5fM",
+      authDomain: "kkgs-32.firebaseapp.com",
+      databaseURL: "https://kkgs-32-default-rtdb.firebaseio.com",
+      projectId: "kkgs-32",
+      storageBucket: "kkgs-32.firebasestorage.app",
+      messagingSenderId: "76744845820",
+      appId: "1:76744845820:web:0c566764c5c1ae1bc4ea79",
+      measurementId: "G-H3Q5DXL6SV"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+    let editingPostId = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // ログイン状態の監視
+      onAuthStateChanged(auth, user => {
+        if (user) {
+          // ログインしていればブログ管理画面を表示
+          showBlogManagement();
+        } else {
+          // ログインしていなければログインフォームを表示
+          showLoginForm();
+        }
+      });
+
+      // ログインフォームの処理
+      const loginForm = document.getElementById("loginForm");
+      loginForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        signInWithEmailAndPassword(auth, email, password)
+        .catch((error) => {
+          alert("ログイン失敗");
+          console.error("ログインエラー: ", error);
+        });
+      });
+
+      // ログアウトボタンの処理
+      document.getElementById("logoutButton").addEventListener("click", () => {
+        signOut(auth).catch((error) => {
+          console.error("ログアウトエラー: ", error);
+        });
+      });
+
+      // 管理画面の処理
+      const postList = document.getElementById("postList");
+
+      document.getElementById("postForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const title = document.getElementById("title").value;
+        const subtitle = document.getElementById("subtitle").value;
+        const content = document.getElementById("content").value;
+        const attachment = document.getElementById("attachment").value;
+        let date = document.getElementById("date").value;
+
+        // 日付が指定されていない場合、現在の日付を使用
+        if (!date) {
+          date = new Date().toISOString().split('T')[0]; // 今日の日付（YYYY-MM-DD形式）
+        }
+
+        if (!title || !subtitle) {
+          alert("タイトル、サブタイトルは必須です。");
+          return;
+        }
+
+        if (editingPostId) {
+          update(ref(database, "posts/" + editingPostId), {
+            title,
+            subtitle,
+            content,
+            attachment,
+            date
+          }).then(() => {
+            alert("記事を更新しました");
+            document.getElementById("postForm").reset();
+            editingPostId = null;
+          }).catch(error => {
+            console.error("更新エラー: ", error);
+          });
+        } else {
+          const postId = Date.now();
+          set(ref(database, "posts/" + postId), {
+            title,
+            subtitle,
+            content,
+            attachment,
+            date
+          }).then(() => {
+            alert("記事を投稿しました");
+            document.getElementById("postForm").reset();
+          }).catch(error => {
+            console.error("投稿エラー: ", error);
+          });
+        }
+      });
+
+      function loadPosts() {
+        onValue(ref(database, "posts"), (snapshot) => {
+          postList.innerHTML = "";
+          if (snapshot.exists()) {
+            let posts = [];
+            snapshot.forEach(childSnapshot => {
+              posts.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            });
+
+            // 日付順にソート
+            posts.sort((a, b) => {
+              const dateDiff = new Date(b.date) - new Date(a.date);
+              if (dateDiff === 0) {
+                return b.id.localeCompare(a.id); // IDの降順で並び替え（古いものが下）
+              }
+              return dateDiff;
+            });
+
+            posts.forEach(post => {
+              const postItem = document.createElement("div");
+              postItem.classList.add("box");
+              postItem.innerHTML =`
+              <h3 class="title is-4">${post.title}</h3>
+              <h4 class="subtitle is-6">${post.subtitle}</h4>
+              <p>${post.content}</p>
+              <hr>
+              <p><strong>日付:</strong> ${post.date}</p>
+              <p class="subtitle is-6"><strong>URL:</strong>${post.attachment}</p>
+              <hr>
+              <a class="button is-info has-text-white" href="${post.attachment}">開く</a>
+              <button class="button is-warning has-text-white" onclick="editPost('${post.id}', '${post.title}', '${post.subtitle}', '${post.content}', '${post.attachment}', '${post.date}')">編集</button>
+              <button class="button is-danger has-text-white" onclick="deletePost('${post.id}')">削除</button>
+              `;
+              postList.appendChild(postItem);
+            });
+          }
+        });
+      }
+
+      window.deletePost = function(postId) {
+        if (confirm("本当に削除しますか？")) {
+          remove(ref(database, "posts/" + postId)).then(() => {
+            alert("記事を削除しました");
+          }).catch(error => {
+            console.error("削除エラー: ", error);
+          });
+        }
+      }
+
+      window.editPost = function(postId, title, subtitle, content, attachment, date) {
+        document.getElementById("title").value = title;
+        document.getElementById("subtitle").value = subtitle;
+        document.getElementById("content").value = content;
+        document.getElementById("attachment").value = attachment;
+        document.getElementById("date").value = date;
+
+        editingPostId = postId;
+      }
+
+      // 管理画面の表示
+      function showBlogManagement() {
+        document.getElementById("loginFormContainer").style.display = "none";
+        document.getElementById("blogManagementContainer").style.display = "block";
+        loadPosts();
+      }
+
+      // ログインフォームの表示
+      function showLoginForm() {
+        document.getElementById("loginFormContainer").style.display = "block";
+        document.getElementById("blogManagementContainer").style.display = "none";
+      }
+    });
+  </script>
+</head>
+<body>
+  <section class="section">
+    <div class="container">
+      <!-- ログインフォーム -->
+      <div id="loginFormContainer" style="display:none;">
+        <h2 class="title">ログイン</h2>
+        <form id="loginForm">
+          <div class="field">
+            <label class="label">メールアドレス</label>
+            <input class="input" type="email" id="email" required>
+          </div>
+          <div class="field">
+            <label class="label">パスワード</label>
+            <input class="input" type="password" id="password" required>
+          </div>
+          <button class="button is-primary has-text-white" type="submit">ログイン</button>
+        </form>
+      </div>
+
+      <!-- 管理画面 -->
+      <div id="blogManagementContainer" style="display:none;">
+        <div class="is-flex is-justify-content-space-between is-align-items-center">
+          <h2 class="title">記事管理画面</h2>
+          <button id="logoutButton" class="button is-danger has-text-white">ログアウト</button>
+        </div>
+        <hr>
+        <form id="postForm">
+          <div class="field">
+            <label class="label">記事のタイトル（必須）</label>
+            <input class="input" type="text" id="title" required>
+          </div>
+          <div class="field">
+            <label class="label">記事のサブタイトル（必須）</label>
+            <input class="input" type="text" id="subtitle" required>
+          </div>
+          <div class="field">
+            <label class="label">記事の本文（任意）</label>
+            <textarea class="textarea" id="content"></textarea>
+          </div>
+          <div class="field">
+            <label class="label">添付ファイル・画像・URL（任意）</label>
+            <input class="input" type="text" id="attachment">
+          </div>
+          <div class="field">
+            <label class="label">日付（予約投稿機能付き、時間指定なし）</label>
+            <input class="input" type="date" id="date">
+          </div>
+          <button class="button is-primary has-text-white" type="submit">投稿</button>
+        </form>
+        <hr>
+        <h3 class="title is-4">投稿済みの記事</h3>
+        <div id="postList"></div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
