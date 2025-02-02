@@ -138,19 +138,23 @@
             });
 
             posts.forEach(post => {
+              let urlButton = "";
+              if (post.attachment && post.attachment.trim() !== "") {
+                urlButton = `<a class="button is-info is-outlined" href="${post.attachment}" target="_blank">開く</a>`;
+              }
               const postItem = document.createElement("div");
               postItem.classList.add("box");
               postItem.innerHTML =`
-              <h3 class="title is-4">${post.title}</h3>
-              <h4 class="subtitle is-6">${post.subtitle}</h4>
-              <p>${post.content}</p>
+              <p class="title is-4">${post.title}</p>
               <hr>
-              <p><strong>日付:</strong> ${post.date}</p>
-              <p class="subtitle is-6"><strong>URL:</strong>${post.attachment}</p>
+              <p class="subtitle is-6 is-spaced">${post.date}</p>
+              <p class="title is-5">${post.subtitle}</p>
               <hr>
-              <a class="button is-info has-text-white" href="${post.attachment}">開く</a>
-              <button class="button is-warning has-text-white" onclick="editPost('${post.id}', '${post.title}', '${post.subtitle}', '${post.content}', '${post.attachment}', '${post.date}')">編集</button>
-              <button class="button is-danger has-text-white" onclick="deletePost('${post.id}')">削除</button>
+              <p class="subtitle is-6">${post.content}</p>
+              <hr>
+              ${urlButton}
+              <button class="button is-warning is-outlined" onclick="editPost('${post.id}', '${post.title}', '${post.subtitle}', '${post.content}', '${post.attachment}', '${post.date}')">編集</button>
+              <button class="button is-danger is-outlined" onclick="deletePost('${post.id}')">削除</button>
               `;
               postList.appendChild(postItem);
             });
@@ -208,7 +212,7 @@
             <label class="label">パスワード</label>
             <input class="input" type="password" id="password" required>
           </div>
-          <button class="button is-primary has-text-white" type="submit">ログイン</button>
+          <button class="button is-primary is-outlined" type="submit">ログイン</button>
         </form>
       </div>
 
@@ -216,7 +220,7 @@
       <div id="blogManagementContainer" style="display:none;">
         <div class="is-flex is-justify-content-space-between is-align-items-center">
           <h2 class="title">記事管理画面</h2>
-          <button id="logoutButton" class="button is-danger has-text-white">ログアウト</button>
+          <button id="logoutButton" class="button is-danger is-outlined">ログアウト</button>
         </div>
         <hr>
         <form id="postForm">
@@ -240,7 +244,7 @@
             <label class="label">日付（予約投稿機能付き、時間指定なし）</label>
             <input class="input" type="date" id="date">
           </div>
-          <button class="button is-primary has-text-white" type="submit">投稿</button>
+          <button class="button is-primary is-outlined" type="submit">投稿</button>
         </form>
         <hr>
         <h3 class="title is-4">投稿済みの記事</h3>
