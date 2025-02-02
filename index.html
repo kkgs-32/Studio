@@ -15,7 +15,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
     import { getDatabase, ref, set, get, remove, update, onValue } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword} from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCjZmvq16kBPs_xhlJp5FkiCzw42WhX5fM",
@@ -195,6 +195,32 @@
         document.getElementById("blogManagementContainer").style.display = "none";
       }
     });
+
+    function generateRandomPassword(length) {
+      const charset = "abcdefghijklmnopqrstuvwxyz0123456789";
+      let password = "";
+      for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * charset.length);
+        password += charset[randomIndex];
+      }
+      return password;
+    }
+    document.getElementById('createAccountButton').addEventListener('click', () => {
+      const newUserEmail = document.getElementById('newUserEmail').value;
+      const newUserPassword = generateRandomPassword(8);
+      const newUserName = document.getElementById('newUserName').value;
+      createUserWithEmailAndPassword(auth, newUserEmail, newUserPassword)
+      .then((newUserCredential) => {
+        const newUser = newUserCredential.user;
+        document.getElementById('initialPassword').textContent = newUserPassword;
+        document.getElementById('userName').textContent = newUserName;
+        document.getElementById('userEmail').textContent = newUserEmail;
+        document.getElementById('accountMessage').style.display = 'block';
+      })
+      .catch((error) => {
+        alert("新規アカウント作成に失敗しました: " + error.message);
+      });
+    });
   </script>
 </head>
 <body>
@@ -222,6 +248,7 @@
           <h2 class="title">記事管理画面</h2>
           <button id="logoutButton" class="button is-danger is-outlined">ログアウト</button>
         </div>
+        <button id="scrollButton" class="button is-link is-small is-outlined">アカウント</button>
         <hr>
         <form id="postForm">
           <div class="field">
@@ -249,8 +276,53 @@
         <hr>
         <h3 class="title is-4">投稿済みの記事</h3>
         <div id="postList"></div>
+        <hr>
+        <div class="container">
+          <h3 class="title is-4">アカウント作成</h3>
+          <div class="box">
+            <div class="field">
+              <label class="label">名前</label>
+              <div class="control">
+                <input id="newUserName" class="input" type="text" placeholder="名前を入力">
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">メールアドレス</label>
+              <div class="control">
+                <input id="newUserEmail" class="input" type="email" placeholder="メールアドレス">
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">パスワード</label>
+              <div class="control">
+                <input id="newUserPassword" class="input" type="password" placeholder="パスワード" readonly>
+              </div>
+            </div>
+            <button id="createAccountButton" class="button is-primary has-text-white">アカウント作成</button>
+          </div>
+          <div id="accountMessage" class="notification is-primary has-text-white" style="display:none;">
+            <h3 class="title">アカウント作成完了のお知らせ</h3>
+            <p>こんにちは、<span id="userName"></span>様</p>
+            <p>アカウント作成が完了しました。以下の情報を確認してください。</p>
+            <p><strong>メールアドレス:</strong><span id="userEmail"></span></p>
+            <p><strong>初期パスワード:</strong><span id="initialPassword"></span></p>
+            <hr>
+            <p>下記のリンクから、パスワードの変更を行うことができます。</p>
+            <p>https://kkgs-32.github.io/HP/change.html</p>
+            <p>サイトへのアクセスはこちらからどうぞ:</p>
+            <p>https://kkgs-32.github.io/HP/</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
+  <script>
+    document.getElementById("scrollButton").addEventListener("click", function() {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: "smooth" // スムーズスクロール
+      });
+    });
+  </script>
 </body>
 </html>
