@@ -113,6 +113,7 @@
           }).then(() => {
             alert("記事を投稿しました");
             document.getElementById("postForm").reset();
+            sendLineNotification(title, subtitle);
           }).catch(error => {
             console.error("投稿エラー: ", error);
           });
@@ -159,6 +160,44 @@
               postList.appendChild(postItem);
             });
           }
+        });
+      }
+
+      function sendLineNotification(postTitle, postSubtitle) {
+        const userUid = auth.currentUser.uid;
+        const lineTokenRef = ref(database, `LINE/${userUid}`);
+
+        get(lineTokenRef).then((snapshot) => {
+          if (snapshot.exists()) {
+            const token = snapshot.val();
+            const message = {
+              messages: [{
+                type: "text",
+                text: `📢 新しい記事が投稿されました！\n\nタイトル: ${postTitle}\nサブタイトル: ${postSubtitle}`
+              }]
+            };
+
+            fetch("https://api.line.me/v2/bot/message/broadcast", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify(message)
+            }).then(response => {
+              if (!response.ok) {
+                throw new Error("LINE通知エラー");
+              }
+              console.log("LINE通知送信成功");
+            }).catch(error => {
+              console.error("LINE通知送信エラー:", error);
+            });
+
+          } else {
+            console.error("LINEアクセストークンが見つかりません");
+          }
+        }).catch(error => {
+          console.error("Firebase Database エラー:", error);
         });
       }
 
