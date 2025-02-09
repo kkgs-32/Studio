@@ -15,7 +15,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
     import { getDatabase, ref, set, get, remove, update, onValue } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCjZmvq16kBPs_xhlJp5FkiCzw42WhX5fM",
@@ -31,39 +31,33 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
     const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
     let editingPostId = null;
 
     document.addEventListener("DOMContentLoaded", () => {
-      // ログイン状態の監視
-      onAuthStateChanged(auth, user => {
-        if (user) {
-          // ログインしていればブログ管理画面を表示
-          showBlogManagement();
-        } else {
-          // ログインしていなければログインフォームを表示
-          showLoginForm();
-        }
+      // Google ログインボタンの処理
+      document.getElementById("googleLoginButton").addEventListener("click", () => {
+        signInWithPopup(auth, provider)
+          .catch((error) => {
+            alert("Googleログイン失敗");
+            console.error("Googleログインエラー: ", error);
+          });
       });
 
-      // ログインフォームの処理
-      const loginForm = document.getElementById("loginForm");
-      loginForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
-
-        signInWithEmailAndPassword(auth, email, password)
-        .catch((error) => {
-          alert("ログイン失敗");
-          console.error("ログインエラー: ", error);
-        });
-      });
-
-      // ログアウトボタンの処理
+      // ログアウト処理
       document.getElementById("logoutButton").addEventListener("click", () => {
         signOut(auth).catch((error) => {
           console.error("ログアウトエラー: ", error);
         });
+      });
+
+      // ログイン状態の監視
+      onAuthStateChanged(auth, user => {
+        if (user) {
+          showBlogManagement();
+        } else {
+          showLoginForm();
+        }
       });
 
       // 管理画面の処理
@@ -202,17 +196,7 @@
     <div class="container">
       <div id="loginFormContainer" style="display:none;">
         <h2 class="title">ログイン</h2>
-        <form id="loginForm">
-          <div class="field">
-            <label class="label">メールアドレス</label>
-            <input class="input" type="email" id="email" required>
-          </div>
-          <div class="field">
-            <label class="label">パスワード</label>
-            <input class="input" type="password" id="password" required>
-          </div>
-          <button class="button is-primary is-outlined" type="submit">ログイン</button>
-        </form>
+        <button id="googleLoginButton" class="button is-primary is-outlined">Googleでログイン</button>
       </div>
       <div id="blogManagementContainer" style="display:none;">
         <div class="is-flex is-justify-content-space-between is-align-items-center">
