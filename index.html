@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>kkgs-32 Studio</title>
   <meta name="description" content="kkgs-32 Studio">
-  <link rel="icon" type="image/png" href="icon/favicon-96x96.png" sizes="96x96">
-  <link rel="icon" type="image/svg+xml" href="icon/favicon.svg">
-  <link rel="shortcut icon" href="icon/favicon.ico">
-  <link rel="apple-touch-icon" sizes="180x180" href="icon/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="https://kkgs-32.github.io/Studio/icon/favicon-96x96.png" sizes="96x96">
+  <link rel="icon" type="image/svg+xml" href="https://kkgs-32.github.io/Studio/icon/favicon.svg">
+  <link rel="shortcut icon" href="https://kkgs-32.github.io/Studio/icon/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://kkgs-32.github.io/Studio/icon/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-title" content="kkgs-32 Studio">
-  <link rel="manifest" href="icon/manifest.json">
+  <link rel="manifest" href="https://kkgs-32.github.io/Studio/icon/manifest.json">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
-    import { getDatabase, ref, set, get, remove, update, onValue } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
+    import { getDatabase, ref, set, get, remove, update, onValue } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCjZmvq16kBPs_xhlJp5FkiCzw42WhX5fM",
@@ -34,60 +34,45 @@
     let editingPostId = null;
 
     document.addEventListener("DOMContentLoaded", () => {
-      // ログイン状態の監視
       onAuthStateChanged(auth, user => {
         if (user) {
-          // ログインしていればブログ管理画面を表示
           showBlogManagement();
         } else {
-          // ログインしていなければログインフォームを表示
           showLoginForm();
         }
       });
 
-      // ログインフォームの処理
       const loginForm = document.getElementById("loginForm");
       loginForm.addEventListener("submit", (e) => {
         e.preventDefault();
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
-
         signInWithEmailAndPassword(auth, email, password)
         .catch((error) => {
           alert("ログイン失敗");
-          console.error("ログインエラー: ", error);
         });
       });
 
-      // ログアウトボタンの処理
       document.getElementById("logoutButton").addEventListener("click", () => {
         signOut(auth).catch((error) => {
-          console.error("ログアウトエラー: ", error);
+          alert("ログアウトエラー");
         });
       });
-
-      // 管理画面の処理
       const postList = document.getElementById("postList");
-
       document.getElementById("postForm").addEventListener("submit", (e) => {
         e.preventDefault();
-
         const title = document.getElementById("title").value;
         const subtitle = document.getElementById("subtitle").value;
         const content = document.getElementById("content").value;
         const attachment = document.getElementById("attachment").value;
         let date = document.getElementById("date").value;
-
-        // 日付が指定されていない場合、現在の日付を使用
         if (!date) {
-          date = new Date().toISOString().split('T')[0]; // 今日の日付（YYYY-MM-DD形式）
+          date = new Date().toISOString().split('T')[0];
         }
-
-        if (!title || !subtitle) {
-          alert("タイトル、サブタイトルは必須です。");
+        if (!title) {
+          alert("タイトルは必須です。");
           return;
         }
-
         if (editingPostId) {
           update(ref(database, "posts/" + editingPostId), {
             title,
@@ -100,7 +85,7 @@
             document.getElementById("postForm").reset();
             editingPostId = null;
           }).catch(error => {
-            console.error("更新エラー: ", error);
+            alert("更新エラー");
           });
         } else {
           const postId = Date.now();
@@ -114,7 +99,7 @@
             alert("記事を投稿しました");
             document.getElementById("postForm").reset();
           }).catch(error => {
-            console.error("投稿エラー: ", error);
+            alert("投稿エラー");
           });
         }
       });
@@ -127,16 +112,13 @@
             snapshot.forEach(childSnapshot => {
               posts.push({ id: childSnapshot.key, ...childSnapshot.val() });
             });
-
-            // 日付順にソート
             posts.sort((a, b) => {
               const dateDiff = new Date(b.date) - new Date(a.date);
               if (dateDiff === 0) {
-                return b.id.localeCompare(a.id); // IDの降順で並び替え（古いものが下）
+                return b.id.localeCompare(a.id);
               }
               return dateDiff;
             });
-
             posts.forEach(post => {
               let urlButton = "";
               if (post.attachment && post.attachment.trim() !== "") {
@@ -167,7 +149,7 @@
           remove(ref(database, "posts/" + postId)).then(() => {
             alert("記事を削除しました");
           }).catch(error => {
-            console.error("削除エラー: ", error);
+            alert("削除エラー");
           });
         }
       }
@@ -182,14 +164,12 @@
         editingPostId = postId;
       }
 
-      // 管理画面の表示
       function showBlogManagement() {
         document.getElementById("loginFormContainer").style.display = "none";
         document.getElementById("blogManagementContainer").style.display = "block";
         loadPosts();
       }
 
-      // ログインフォームの表示
       function showLoginForm() {
         document.getElementById("loginFormContainer").style.display = "block";
         document.getElementById("blogManagementContainer").style.display = "none";
@@ -204,12 +184,14 @@
         <h2 class="title">ログイン</h2>
         <form id="loginForm">
           <div class="field">
-            <label class="label">メールアドレス</label>
-            <input class="input" type="email" id="email" required>
+            <label class="label">メールアドレス
+              <input class="input" type="email" id="email" autocomplete="email" required>
+            </label>
           </div>
           <div class="field">
-            <label class="label">パスワード</label>
-            <input class="input" type="password" id="password" required>
+            <label class="label">パスワード
+              <input class="input" type="password" id="password" autocomplete="current-password" required>
+            </label>
           </div>
           <button class="button is-primary is-outlined" type="submit">ログイン</button>
         </form>
@@ -222,24 +204,29 @@
         <hr>
         <form id="postForm">
           <div class="field">
-            <label class="label">記事のタイトル（必須）</label>
-            <input class="input" type="text" id="title" required>
+            <label class="label">記事のタイトル（必須）
+              <input class="input" type="text" id="title" required autocomplete="off">
+            </label>
           </div>
           <div class="field">
-            <label class="label">記事のサブタイトル（必須）</label>
-            <input class="input" type="text" id="subtitle" required>
+            <label class="label">記事のサブタイトル（任意）
+              <input class="input" type="text" id="subtitle" autocomplete="off">
+            </label>
           </div>
           <div class="field">
-            <label class="label">記事の本文（任意）</label>
-            <textarea class="textarea" id="content"></textarea>
+            <label class="label">記事の本文（任意）
+              <textarea class="textarea" id="content"></textarea>
+            </label>
           </div>
           <div class="field">
-            <label class="label">添付ファイル・画像・URL（任意）</label>
-            <input class="input" type="text" id="attachment">
+            <label class="label">添付ファイル・画像・URL（任意）
+              <input class="input" type="text" id="attachment" autocomplete="off">
+            </label>
           </div>
           <div class="field">
-            <label class="label">日付（予約投稿機能付き、時間指定なし）</label>
-            <input class="input" type="date" id="date">
+            <label class="label">日付
+              <input class="input" type="date" id="date">
+            </label>
           </div>
           <button class="button is-primary is-outlined" type="submit">投稿</button>
         </form>

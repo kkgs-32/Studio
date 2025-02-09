@@ -1,7 +1,7 @@
 {
   "name": "kkgs-32 Studio",
   "short_name": "Studio",
-  "start_url": "https://kkgs-32.github.io/Studio/",
+  "start_url": "https://kkgs-32.github.io/Studio/index",
   "display": "fullscreen",
   "theme_color": "#FFFFFF",
   "background_color": "#FFFFFF",
