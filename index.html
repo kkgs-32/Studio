@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>kkgs-32 Studio</title>
+  <meta name="description" content="kkgs-32 Studio">
+  <link rel="icon" type="image/png" href="https://kkgs-32.github.io/Studio/icon/favicon-96x96.png" sizes="96x96">
+  <link rel="icon" type="image/svg+xml" href="https://kkgs-32.github.io/Studio/icon/favicon.svg">
+  <link rel="shortcut icon" href="https://kkgs-32.github.io/Studio/icon/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://kkgs-32.github.io/Studio/icon/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="kkgs-32 Studio">
+  <link rel="manifest" href="https://kkgs-32.github.io/Studio/icon/manifest.json">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+  <script type="module">
+    import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
+    import { getAuth, signOut, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
+
+    // Firebase設定
+    const firebaseConfig = {
+      apiKey: "AIzaSyCjZmvq16kBPs_xhlJp5FkiCzw42WhX5fM",
+      authDomain: "kkgs-32.firebaseapp.com",
+      databaseURL: "https://kkgs-32-default-rtdb.firebaseio.com",
+      projectId: "kkgs-32",
+      storageBucket: "kkgs-32.firebasestorage.app",
+      messagingSenderId: "76744845820",
+      appId: "1:76744845820:web:0c566764c5c1ae1bc4ea79",
+      measurementId: "G-H3Q5DXL6SV"
+    };
+
+    // Firebase初期化
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 投稿一覧を表示する関数
+    async function loadPosts() {
+      const postList = document.getElementById("postList");
+      postList.innerHTML = "";
+
+      // 投稿を日付の降順で取得
+      const q = query(collection(db, "posts"), orderBy("date", "desc"));
+      const querySnapshot = await getDocs(q);
+
+      querySnapshot.forEach((doc) => {
+        const post = doc.data();
+        const postId = doc.id;
+
+        // 投稿を表示するHTML要素を作成
+        const postItem = document.createElement("div");
+        postItem.classList.add("box");
+
+        // content内の改行（<br>）を反映
+        const contentWithBreaks = post.content.replace(/<br>/g, "<br>");
+
+        postItem.innerHTML = `
+          <p class="title is-4">${post.title}</p>
+          <hr>
+          <p class="subtitle is-6 is-spaced">${post.date}</p>
+          <p class="title is-5">${post.subtitle}</p>
+          <hr>
+          <p class="subtitle is-6">${contentWithBreaks}</p>
+          <hr>
+          <div class="buttons">
+            ${post.attachment ? `<a class="button is-info is-outlined" href="${post.attachment}" target="_blank">開く</a>` : ''}
+            <button class="button is-warning is-outlined" onclick="editPost('${postId}', '${post.title}', '${post.subtitle}', '${post.content}', '${post.attachment}', '${post.date}')">編集</button>
+            <button class="button is-danger is-outlined" onclick="deletePost('${postId}')">削除</button>
+          </div>
+        `;
+        postList.appendChild(postItem);
+      });
+    }
+
+    // 記事を削除する関数
+    window.deletePost = async function(postId) {
+      if (confirm("本当に削除しますか？")) {
+        const postDoc = doc(db, "posts", postId);
+        try {
+          await deleteDoc(postDoc);
+          alert("記事を削除しました");
+          loadPosts();
+        } catch (error) {
+          alert("削除エラー");
+        }
+      }
+    }
+
+    // 記事を編集する関数
+    window.editPost = function(postId, title, subtitle, content, attachment, date) {
+      document.getElementById("title").value = title;
+      document.getElementById("subtitle").value = subtitle;
+      document.getElementById("content").value = content.replace(/<br>/g, "\n"); // <br> を \n に戻す
+      document.getElementById("attachment").value = attachment;
+      document.getElementById("date").value = date;
+
+      editingPostId = postId;
+    }
+
+    // 記事の投稿処理
+    let editingPostId = null;
+    document.getElementById("postForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("title").value;
+      const subtitle = document.getElementById("subtitle").value;
+      let content = document.getElementById("content").value;
+      const attachment = document.getElementById("attachment").value;
+      let date = document.getElementById("date").value;
+
+      // 改行を <br> タグに変換
+      content = content.replace(/\n/g, "<br>");
+
+      if (!date) {
+        date = new Date().toISOString().split('T')[0];
+      }
+      if (!title) {
+        alert("タイトルは必須です");
+        return;
+      }
+
+      if (editingPostId) {  // 編集の場合
+        const postDoc = doc(db, "posts", editingPostId);
+        await updateDoc(postDoc, {
+          title,
+          subtitle,
+          content,
+          attachment,
+          date
+        });
+        alert("記事を更新しました");
+        editingPostId = null;
+      } else {  // 新規投稿の場合
+        const postsRef = collection(db, "posts");
+        await addDoc(postsRef, {
+          title,
+          subtitle,
+          content,
+          attachment,
+          date
+        });
+        alert("記事を投稿しました");
+      }
+
+      // 投稿後、記事一覧を更新
+      loadPosts();
+
+      // フォームをリセットして入力を消す
+      document.getElementById("postForm").reset();
+
+      // 編集状態をリセット
+      editingPostId = null;
+    });
+
+    // 管理画面とログイン画面を切り替える関数
+    function showBlogManagement() {
+      document.getElementById("loginFormContainer").style.display = "none";  // ログイン画面を非表示
+      document.getElementById("blogManagementContainer").style.display = "block";  // 管理画面を表示
+      loadPosts();
+    }
+
+    function showLoginForm() {
+      document.getElementById("loginFormContainer").style.display = "block";  // ログイン画面を表示
+      document.getElementById("blogManagementContainer").style.display = "none";  // 管理画面を非表示
+    }
+
+    // Firebase Authenticationのインスタンスを取得
+    const auth = getAuth();
+
+    // 日付を取得する関数（YYYY-MM-DD形式）
+    function getTodayDate() {
+      return new Date().toISOString().split("T")[0];
+    }
+
+    // ログアウト処理
+    function autoLogout() {
+      localStorage.removeItem("loginDate");
+      signOut(auth).then(() => {
+        alert("日付が変わったため、ログアウトします");
+        location.reload();
+      }).catch((error) => {
+        console.error("ログアウトエラー:", error);
+      });
+    }
+
+    // 認証状態の監視
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        showBlogManagement();
+
+        // ローカルストレージに保存された日付を取得
+        const savedDate = localStorage.getItem("loginDate");
+        const today = getTodayDate();
+
+        if (savedDate && savedDate !== today) {
+          autoLogout();
+        } else {
+          localStorage.setItem("loginDate", today);
+        }
+      } else {
+        showLoginForm();
+      }
+    });
+
+    // 1分ごとに日付の変化をチェック
+    setInterval(() => {
+      const savedDate = localStorage.getItem("loginDate");
+      const today = getTodayDate();
+
+      if (savedDate && savedDate !== today) {
+        autoLogout();
+      }
+    }, 60000);
+
+    // ログインフォームの送信イベント
+    const loginForm = document.getElementById("loginForm");
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => {
+          localStorage.setItem("loginDate", getTodayDate());
+        })
+        .catch((error) => {
+          alert("ログイン失敗: " + error.message);
+        });
+    });
+
+    // ログアウトボタンのクリックイベント
+    document.getElementById("logoutButton").addEventListener("click", () => {
+      signOut(auth).then(() => {
+        localStorage.removeItem("loginDate");
+      }).catch((error) => {
+        alert("ログアウトエラー: " + error.message);
+      });
+    });
+  </script>
+</head>
+<body>
+  <section class="section">
+    <div class="container">
+      <div id="loginFormContainer" style="display:none;">
+        <h2 class="title">記事管理画面</h2>
+        <form id="loginForm">
+          <div class="field">
+            <label class="label">メールアドレス
+              <input class="input" type="email" id="email" autocomplete="email" required>
+            </label>
+          </div>
+          <div class="field">
+            <label class="label">パスワード
+              <input class="input" type="password" id="password" autocomplete="current-password" required>
+            </label>
+          </div>
+          <button class="button is-primary is-outlined" type="submit">ログイン</button>
+        </form>
+      </div>
+      <div id="blogManagementContainer" style="display:none;">
+        <div class="is-flex is-justify-content-space-between is-align-items-center">
+          <h2 class="title">記事管理画面</h2>
+          <button id="logoutButton" class="button is-danger is-outlined">ログアウト</button>
+        </div>
+        <hr>
+        <form id="postForm">
+          <div class="field">
+            <label class="label">記事のタイトル（必須）
+              <input class="input" type="text" id="title" required autocomplete="off">
+            </label>
+          </div>
+          <div class="field">
+            <label class="label">記事のサブタイトル（任意）
+              <input class="input" type="text" id="subtitle" autocomplete="off">
+            </label>
+          </div>
+          <div class="field">
+            <label class="label">記事の本文（任意）
+              <textarea id="content" class="textarea"></textarea>
+            </label>
+          </div>
+          <div class="field">
+            <label class="label">添付ファイル・画像・URL（任意）
+              <input class="input" type="text" id="attachment" autocomplete="off">
+            </label>
+          </div>
+          <div class="field">
+            <label class="label">日付
+              <input class="input" type="date" id="date">
+            </label>
+          </div>
+          <button class="button is-primary is-outlined" type="submit">投稿</button>
+        </form>
+        <hr>
+        <h3 class="title is-4">投稿済みの記事</h3>
+        <div id="postList"></div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
